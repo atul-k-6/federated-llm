@@ -3,3 +3,4 @@ fedlearn-env/
 pycache/
 checkpoints/
 data/client_/
+client/__pycache__/

@@ -1,0 +1,9 @@
+# client/requirements.txt
+torch==2.1.2
+transformers==4.37.0
+datasets==2.16.0
+peft==0.8.0
+accelerate==0.26.0
+flwr==1.7.0
+opacus==1.4.0
+numpy==1.26.3
