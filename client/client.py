@@ -30,15 +30,15 @@ class FedLoRAClient(fl.client.NumPyClient):
         set_lora_state_dict(self.model, state_dict)
  
     def fit(self, parameters, config):
-        """
-        1. Load global weights from aggregator
-        2. Train locally
-        3. Return updated weights + metrics
-        """
         self.set_parameters(parameters)
-        self.model, avg_loss = local_train(self.model, self.dataset, self.config)
+        self.model, avg_loss, epsilon = local_train(
+            self.model, self.dataset, self.config
+        )
         updated_params = self.get_parameters(config={})
-        return updated_params, len(self.dataset), {"train_loss": avg_loss}
+        return updated_params, len(self.dataset), {
+            "train_loss": avg_loss,
+            "epsilon": epsilon,          # Report privacy budget to aggregator
+        }
  
     def evaluate(self, parameters, config):
         """Quick local evaluation for Flower's built-in metrics."""
@@ -56,9 +56,12 @@ def main():
     dataset = torch.load(data_path)
  
     config = {
-        "local_epochs":  int(os.environ.get("LOCAL_EPOCHS", "2")),
-        "batch_size":    int(os.environ.get("BATCH_SIZE", "16")),
+        "local_epochs": int(os.environ.get("LOCAL_EPOCHS", "2")),
+        "batch_size": int(os.environ.get("BATCH_SIZE", "16")),
         "learning_rate": float(os.environ.get("LEARNING_RATE", "2e-4")),
+        "noise_multiplier": float(os.environ.get("NOISE_MULTIPLIER", "0.0")),
+        "max_grad_norm": float(os.environ.get("MAX_GRAD_NORM", "1.0")),
+        "target_delta": float(os.environ.get("TARGET_DELTA", "1e-5")),
     }
  
     client = FedLoRAClient(client_id, dataset, config)

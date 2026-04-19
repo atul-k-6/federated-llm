@@ -1,39 +1,31 @@
 import torch
 from torch.utils.data import DataLoader
 from torch.optim import AdamW
-from transformers import get_linear_schedule_with_warmup
+from dp_utils import make_private, get_epsilon
  
 def local_train(model, dataset, config):
-    """
-    Train model on local data for config["local_epochs"] epochs.
-    Returns: (trained model, avg training loss)
-    """
-    model.train()
-    device = torch.device("cpu")  # CPU for free-tier compatibility
+    device = torch.device("cpu")
     model.to(device)
+    model.train()
  
     loader = DataLoader(
         dataset,
         batch_size=config.get("batch_size", 16),
         shuffle=True,
-        num_workers=0,  # Must be 0 inside Docker on some systems
+        num_workers=0,
     )
  
     optimizer = AdamW(
         filter(lambda p: p.requires_grad, model.parameters()),
         lr=config.get("learning_rate", 2e-4),
-        weight_decay=0.01,
     )
  
-    total_steps = len(loader) * config.get("local_epochs", 2)
-    scheduler = get_linear_schedule_with_warmup(
-        optimizer,
-        num_warmup_steps=total_steps // 10,
-        num_training_steps=total_steps,
+    # Wrap with Opacus if DP is enabled
+    model, optimizer, loader, privacy_engine = make_private(
+        model, optimizer, loader, config
     )
  
-    total_loss = 0.0
-    num_steps = 0
+    total_loss, num_steps = 0.0, 0
  
     for epoch in range(config.get("local_epochs", 2)):
         for batch in loader:
@@ -41,23 +33,21 @@ def local_train(model, dataset, config):
             attention_mask = batch["attention_mask"].to(device)
             labels         = batch["label"].to(device)
  
-            outputs = model(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                labels=labels,
-            )
- 
+            outputs = model(input_ids=input_ids,
+                           attention_mask=attention_mask, labels=labels)
             loss = outputs.loss
             loss.backward()
  
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            # Opacus handles gradient clipping internally
+            # DO NOT call clip_grad_norm_ manually when DP is active
             optimizer.step()
-            scheduler.step()
             optimizer.zero_grad()
  
             total_loss += loss.item()
             num_steps += 1
  
     avg_loss = total_loss / num_steps
-    print(f"Local training done. Avg loss: {avg_loss:.4f}")
-    return model, avg_loss
+    epsilon  = get_epsilon(privacy_engine, delta=config.get("target_delta", 1e-5))
+ 
+    print(f"Train done. Loss={avg_loss:.4f}, epsilon={epsilon:.3f}")
+    return model, avg_loss, epsilon

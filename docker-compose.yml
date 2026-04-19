@@ -1,0 +1,68 @@
+services:
+  aggregator:
+    build:
+      context: ./aggregator
+    container_name: fed-aggregator
+    environment:
+      - CHECKPOINT_DIR=/checkpoints
+      - NUM_ROUNDS=${NUM_ROUNDS:-15}
+      - MIN_CLIENTS=${MIN_CLIENTS:-3}
+      - EVAL_SERVICE_URL=${EVAL_SERVICE_URL:-http://eval:8000}
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./checkpoints:/checkpoints
+
+  client_1:
+    build:
+      context: ./client
+    container_name: fed-client-1
+    depends_on:
+      - aggregator
+    environment:
+      - CLIENT_ID=1
+      - SERVER_ADDRESS=aggregator:8080
+      - NOISE_MULTIPLIER=${NOISE_MULTIPLIER:-0.0}
+      - MAX_GRAD_NORM=${MAX_GRAD_NORM:-1.0}
+      - TARGET_DELTA=${TARGET_DELTA:-1e-5}
+      - LOCAL_EPOCHS=${LOCAL_EPOCHS:-2}
+      - BATCH_SIZE=${BATCH_SIZE:-16}
+      - LEARNING_RATE=${LEARNING_RATE:-2e-4}
+    volumes:
+      - ./data/client_1:/data
+
+  client_2:
+    build:
+      context: ./client
+    container_name: fed-client-2
+    depends_on:
+      - aggregator
+    environment:
+      - CLIENT_ID=2
+      - SERVER_ADDRESS=aggregator:8080
+      - NOISE_MULTIPLIER=${NOISE_MULTIPLIER:-0.0}
+      - MAX_GRAD_NORM=${MAX_GRAD_NORM:-1.0}
+      - TARGET_DELTA=${TARGET_DELTA:-1e-5}
+      - LOCAL_EPOCHS=${LOCAL_EPOCHS:-2}
+      - BATCH_SIZE=${BATCH_SIZE:-16}
+      - LEARNING_RATE=${LEARNING_RATE:-2e-4}
+    volumes:
+      - ./data/client_2:/data
+
+  client_3:
+    build:
+      context: ./client
+    container_name: fed-client-3
+    depends_on:
+      - aggregator
+    environment:
+      - CLIENT_ID=3
+      - SERVER_ADDRESS=aggregator:8080
+      - NOISE_MULTIPLIER=${NOISE_MULTIPLIER:-0.0}
+      - MAX_GRAD_NORM=${MAX_GRAD_NORM:-1.0}
+      - TARGET_DELTA=${TARGET_DELTA:-1e-5}
+      - LOCAL_EPOCHS=${LOCAL_EPOCHS:-2}
+      - BATCH_SIZE=${BATCH_SIZE:-16}
+      - LEARNING_RATE=${LEARNING_RATE:-2e-4}
+    volumes:
+      - ./data/client_3:/data
