@@ -1,0 +1,54 @@
+services:
+  aggregator:
+    image: fedlearn-aggregator
+    build: .
+    command: uvicorn server.main:app --host 0.0.0.0 --port 8000
+    environment:
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+
+  client_1:
+    image: fedlearn-client
+    build: .
+    command: python -m client.client
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CLIENT_ID=0
+      - NUM_CLIENTS=2
+      - AGGREGATOR_URL=http://aggregator:8000
+    volumes:
+      - .:/app
+      - ./data:/app/data
+    depends_on:
+      - aggregator
+
+  client_2:
+    image: fedlearn-client
+    build: .
+    command: python -m client.client
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CLIENT_ID=1
+      - NUM_CLIENTS=2
+      - AGGREGATOR_URL=http://aggregator:8000
+    volumes:
+      - .:/app
+      - ./data:/app/data
+    depends_on:
+      - aggregator
+
+  evaluator:
+    image: fedlearn-evaluator
+    build: .
+    command: python -m evaluator.evaluate
+    environment:
+      - PYTHONUNBUFFERED=1
+      - AGGREGATOR_URL=http://aggregator:8000
+    volumes:
+      - .:/app
+      - ./data:/app/data
+    depends_on:
+      - aggregator
