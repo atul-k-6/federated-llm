@@ -14,8 +14,13 @@ accuracy_plot.png
 .venv
 env/
 venv/
+fedlearn-env/
 
 # IDEs
 .idea/
 .vscode/
 *.swp
+
+# Old branch specific
+checkpoints/
+results/
