@@ -104,13 +104,14 @@ def get_initial_parameters():
  
  
 def main():
-    min_clients = int(os.environ.get("MIN_CLIENTS", "3"))
+    min_clients = int(os.environ.get("MIN_CLIENTS", "1"))
+    fraction_fit = float(os.environ.get("FRACTION_FIT", "1.0"))
  
     strategy = FedLoRAStrategy(
         initial_parameters=get_initial_parameters(),
         min_fit_clients=min_clients,        # Wait for all clients
         min_available_clients=min_clients,  # Before starting round
-        fraction_fit=1.0,                   # Use 100% of available clients
+        fraction_fit=fraction_fit,
         fraction_evaluate=0.0,              # Disable client-side eval
     )
  

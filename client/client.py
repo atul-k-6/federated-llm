@@ -52,6 +52,12 @@ def main():
     client_id  = int(os.environ.get("CLIENT_ID", "1"))
     server_addr = os.environ.get("SERVER_ADDRESS", "aggregator:8080")
     data_path  = f"/data/data.pt"   # Volume-mounted path inside container
+
+    # Keep CPU usage bounded on low-resource machines.
+    torch.set_num_threads(int(os.environ.get("TORCH_NUM_THREADS", "1")))
+    torch.set_num_interop_threads(
+        int(os.environ.get("TORCH_NUM_INTEROP_THREADS", "1"))
+    )
  
     dataset = torch.load(data_path)
  

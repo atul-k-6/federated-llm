@@ -6,7 +6,8 @@ services:
     environment:
       - CHECKPOINT_DIR=/checkpoints
       - NUM_ROUNDS=${NUM_ROUNDS:-15}
-      - MIN_CLIENTS=${MIN_CLIENTS:-3}
+      - MIN_CLIENTS=${MIN_CLIENTS:-1}
+      - FRACTION_FIT=${FRACTION_FIT:-1.0}
       - EVAL_SERVICE_URL=${EVAL_SERVICE_URL:-http://eval:8000}
     ports:
       - "8080:8080"
@@ -25,9 +26,11 @@ services:
       - NOISE_MULTIPLIER=${NOISE_MULTIPLIER:-0.0}
       - MAX_GRAD_NORM=${MAX_GRAD_NORM:-1.0}
       - TARGET_DELTA=${TARGET_DELTA:-1e-5}
-      - LOCAL_EPOCHS=${LOCAL_EPOCHS:-2}
-      - BATCH_SIZE=${BATCH_SIZE:-16}
+      - LOCAL_EPOCHS=${LOCAL_EPOCHS:-1}
+      - BATCH_SIZE=${BATCH_SIZE:-8}
       - LEARNING_RATE=${LEARNING_RATE:-2e-4}
+      - TORCH_NUM_THREADS=${TORCH_NUM_THREADS:-1}
+      - TORCH_NUM_INTEROP_THREADS=${TORCH_NUM_INTEROP_THREADS:-1}
     volumes:
       - ./data/client_1:/data
 
@@ -37,15 +40,19 @@ services:
     container_name: fed-client-2
     depends_on:
       - aggregator
+    profiles:
+      - multi-client
     environment:
       - CLIENT_ID=2
       - SERVER_ADDRESS=aggregator:8080
       - NOISE_MULTIPLIER=${NOISE_MULTIPLIER:-0.0}
       - MAX_GRAD_NORM=${MAX_GRAD_NORM:-1.0}
       - TARGET_DELTA=${TARGET_DELTA:-1e-5}
-      - LOCAL_EPOCHS=${LOCAL_EPOCHS:-2}
-      - BATCH_SIZE=${BATCH_SIZE:-16}
+      - LOCAL_EPOCHS=${LOCAL_EPOCHS:-1}
+      - BATCH_SIZE=${BATCH_SIZE:-8}
       - LEARNING_RATE=${LEARNING_RATE:-2e-4}
+      - TORCH_NUM_THREADS=${TORCH_NUM_THREADS:-1}
+      - TORCH_NUM_INTEROP_THREADS=${TORCH_NUM_INTEROP_THREADS:-1}
     volumes:
       - ./data/client_2:/data
 
@@ -55,14 +62,18 @@ services:
     container_name: fed-client-3
     depends_on:
       - aggregator
+    profiles:
+      - full-mesh
     environment:
       - CLIENT_ID=3
       - SERVER_ADDRESS=aggregator:8080
       - NOISE_MULTIPLIER=${NOISE_MULTIPLIER:-0.0}
       - MAX_GRAD_NORM=${MAX_GRAD_NORM:-1.0}
       - TARGET_DELTA=${TARGET_DELTA:-1e-5}
-      - LOCAL_EPOCHS=${LOCAL_EPOCHS:-2}
-      - BATCH_SIZE=${BATCH_SIZE:-16}
+      - LOCAL_EPOCHS=${LOCAL_EPOCHS:-1}
+      - BATCH_SIZE=${BATCH_SIZE:-8}
       - LEARNING_RATE=${LEARNING_RATE:-2e-4}
+      - TORCH_NUM_THREADS=${TORCH_NUM_THREADS:-1}
+      - TORCH_NUM_INTEROP_THREADS=${TORCH_NUM_INTEROP_THREADS:-1}
     volumes:
       - ./data/client_3:/data
