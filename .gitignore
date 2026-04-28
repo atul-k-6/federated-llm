@@ -3,11 +3,14 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Downloaded data
+# Downloaded data and checkpoints
 /data/
+/data_raw/
+/checkpoints/
 
-# Generated plots
-accuracy_plot.png
+# Generated models and plots
+accuracy_plot_*.png
+final_global_model_*.pt
 
 # Environments
 .env

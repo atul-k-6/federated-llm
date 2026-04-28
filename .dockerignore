@@ -1,0 +1,7 @@
+venv/
+data/
+data_raw/
+checkpoints/
+.git/
+__pycache__/
+*.pyc

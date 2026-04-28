@@ -7,8 +7,9 @@ import asyncio
 
 app = FastAPI()
 
-ROUNDS = 5
-EXPECTED_CLIENTS = 2
+ROUNDS = 10
+EXPECTED_CLIENTS = 3
+NOISE_MULTIPLIER = os.environ.get("NOISE_MULTIPLIER", "0.01")
 
 current_round = 1
 global_model_state = None
@@ -62,6 +63,11 @@ async def submit_update(client_id: int, file: UploadFile = File(...)):
         global_model_state = new_state
         client_updates = []
         print(f"Round {current_round} complete.")
+        
+        if current_round == ROUNDS:
+            print(f"Federated training complete. Saving final global model for noise {NOISE_MULTIPLIER}...")
+            torch.save(global_model_state, f"final_global_model_{NOISE_MULTIPLIER}.pt")
+            
         current_round += 1
         
     return {"status": "received"}

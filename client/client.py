@@ -4,17 +4,15 @@ import requests
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torchvision
-import torchvision.transforms as transforms
 import io
 from common.model import SimpleCNN
 
 AGGREGATOR_URL = os.environ.get("AGGREGATOR_URL", "http://localhost:8000")
 CLIENT_ID = int(os.environ.get("CLIENT_ID", "0"))
-NUM_CLIENTS = int(os.environ.get("NUM_CLIENTS", "2"))
+NUM_CLIENTS = int(os.environ.get("NUM_CLIENTS", "3"))   
 
 # DP parameters
-NOISE_MULTIPLIER = 0.01
+NOISE_MULTIPLIER = float(os.environ.get("NOISE_MULTIPLIER", "0.01"))
 CLIP_NORM = 1.0
 
 def train(model, dataloader, epochs=2):
@@ -47,7 +45,7 @@ def add_dp_noise(deltas):
     for key, tensor in deltas.items():
         # clip
         clipped_tensor = tensor * clip_coef_clamped
-        # add Gaussian noise: N(0, (NOISE_MULTIPLIER * CLIP_NORM)^2)
+        # add Gaussian noise
         noise = torch.randn_like(clipped_tensor) * (NOISE_MULTIPLIER * CLIP_NORM)
         noised_deltas[key] = clipped_tensor + noise
         
@@ -56,33 +54,25 @@ def add_dp_noise(deltas):
 def main():
     print(f"Client {CLIENT_ID} starting...")
     
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.5,), (0.5,))
-    ])
+    # Load pre-partitioned dataset
+    dataset_path = '/dataset/dataset.pt'
+    print(f"Client {CLIENT_ID}: Loading pre-partitioned dataset from {dataset_path}...")
     
-    # Load dataset
-    print(f"Client {CLIENT_ID}: Loading dataset from /dataset...")
-    data_dir = '/dataset'
-    trainset = torchvision.datasets.MNIST(root=data_dir, train=True, download=False, transform=transform)
-    
-    # Partition dataset
-    dataset_size = len(trainset)
-    shard_size = dataset_size // NUM_CLIENTS
-    indices = list(range(dataset_size))
-    # Simple contiguous partition
-    start_idx = CLIENT_ID * shard_size
-    end_idx = start_idx + shard_size
-    client_indices = indices[start_idx:end_idx]
-    
-    client_subset = torch.utils.data.Subset(trainset, client_indices)
+    # Check if dataset exists, since we depend on prepare_dataset.py having run
+    while not os.path.exists(dataset_path):
+        print(f"Waiting for dataset at {dataset_path}...")
+        time.sleep(5)
+        
+    client_subset = torch.load(dataset_path, map_location="cpu", weights_only=False)
     trainloader = torch.utils.data.DataLoader(client_subset, batch_size=32, shuffle=True)
     print(f"Client {CLIENT_ID} dataset size: {len(client_subset)}")
     
     model = SimpleCNN()
     
     current_round = 1
-    total_rounds = 5
+    total_rounds = 10
+    
+    os.makedirs(f'/app/checkpoints/{NOISE_MULTIPLIER}', exist_ok=True)
     
     while True:
         try:
@@ -101,12 +91,16 @@ def main():
                     resp = requests.get(f"{AGGREGATOR_URL}/get_model")
                     if resp.status_code == 200:
                         buffer = io.BytesIO(resp.content)
-                        # We use weights_only=False to avoid FutureWarnings for now since this is trusted local data
-                        global_state = torch.load(buffer, map_location="cpu")
+                        global_state = torch.load(buffer, map_location="cpu", weights_only=False)
                         model.load_state_dict(global_state)
                         
                         print(f"Client {CLIENT_ID}: Round {current_round} - Training...")
-                        train(model, trainloader, epochs=2)
+                        train(model, trainloader, epochs=4)
+                        
+                        # Save checkpoint
+                        ckpt_path = f"/app/checkpoints/{NOISE_MULTIPLIER}/client_{CLIENT_ID}_round_{current_round}.pt"
+                        torch.save(model.state_dict(), ckpt_path)
+                        print(f"Client {CLIENT_ID}: Saved checkpoint to {ckpt_path}")
                         
                         print(f"Client {CLIENT_ID}: Round {current_round} - Calculating deltas and adding DP noise...")
                         local_state = model.state_dict()
