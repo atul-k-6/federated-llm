@@ -4,6 +4,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, random_split
 from torchvision import datasets, transforms
 import os
+import json
 from common.model import SimpleCNN
 
 # Define the training function
@@ -28,6 +29,8 @@ def validate(model, val_loader, criterion, device):
     val_loss = 0.0
     correct = 0
     total = 0
+    per_class_correct = [0] * 10
+    per_class_total = [0] * 10
     with torch.no_grad():
         for inputs, labels in val_loader:
             inputs, labels = inputs.to(device), labels.to(device)
@@ -39,8 +42,19 @@ def validate(model, val_loader, criterion, device):
             _, predicted = torch.max(outputs, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
+
+            # Per-class accuracy
+            for label, prediction in zip(labels, predicted):
+                if label == prediction:
+                    per_class_correct[label] += 1
+                per_class_total[label] += 1
+
     accuracy = 100 * correct / total
-    return val_loss / len(val_loader), accuracy
+    per_class_accuracy = {
+        f"class_{i}": 100 * per_class_correct[i] / per_class_total[i] if per_class_total[i] > 0 else 0
+        for i in range(10)
+    }
+    return val_loss / len(val_loader), accuracy, per_class_accuracy
 
 # Main function
 def main():
@@ -75,6 +89,10 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
+    # Create metrics directory
+    metrics_dir = "./metrics/centralized"
+    os.makedirs(metrics_dir, exist_ok=True)
+
     # Training loop with early stopping
     best_val_loss = float('inf')
     patience = 5
@@ -82,9 +100,20 @@ def main():
 
     for epoch in range(1, 101):  # Maximum of 100 epochs
         train_loss = train(model, train_loader, criterion, optimizer, device)
-        val_loss, val_accuracy = validate(model, val_loader, criterion, device)
+        val_loss, val_accuracy, per_class_accuracy = validate(model, val_loader, criterion, device)
 
         print(f"Epoch {epoch}: Train Loss = {train_loss:.4f}, Val Loss = {val_loss:.4f}, Val Accuracy = {val_accuracy:.2f}%")
+
+        # Save metrics to JSON
+        metrics = {
+            "round": epoch,
+            "train_loss": train_loss,
+            "val_loss": val_loss,
+            "accuracy": val_accuracy,
+            "per_class_accuracy": per_class_accuracy
+        }
+        with open(f"{metrics_dir}/round_{epoch}.json", "w") as f:
+            json.dump(metrics, f, indent=4)
 
         # Early stopping condition
         if val_loss < best_val_loss:
@@ -100,7 +129,7 @@ def main():
 
     # Test the model
     model.load_state_dict(torch.load("best_model.pth"))
-    test_loss, test_accuracy = validate(model, test_loader, criterion, device)
+    test_loss, test_accuracy, _ = validate(model, test_loader, criterion, device)
     print(f"Test Loss = {test_loss:.4f}, Test Accuracy = {test_accuracy:.2f}%")
 
 if __name__ == "__main__":
