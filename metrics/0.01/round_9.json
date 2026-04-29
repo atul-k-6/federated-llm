@@ -1,0 +1,21 @@
+{
+    "round": 9,
+    "noise_multiplier": 0.01,
+    "accuracy": 61.59,
+    "loss": 1.3840223510742187,
+    "precision": 0.6341915157403732,
+    "recall": 0.6159000000000001,
+    "f1_score": 0.6179768904510627,
+    "per_class_accuracy": {
+        "plane": 67.2,
+        "car": 60.3,
+        "bird": 58.9,
+        "cat": 46.1,
+        "deer": 51.1,
+        "dog": 47.6,
+        "frog": 71.9,
+        "horse": 58.6,
+        "ship": 81.5,
+        "truck": 72.7
+    }
+}
