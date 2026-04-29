@@ -6,7 +6,7 @@ This project simulates a Federated Learning (FL) environment using Docker, train
 
 Follow these steps to set up the environment, prepare the dataset, and run the simulation.
 
-### 1. Set Up the Python Environment
+### 1. Set Up the Python Environment (For Windows)
 You need a local Python environment to download and partition the dataset before starting the Docker containers.
 
 ```powershell
