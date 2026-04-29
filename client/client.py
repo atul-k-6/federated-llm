@@ -70,7 +70,7 @@ def main():
     model = SimpleCNN()
     
     current_round = 1
-    total_rounds = 10
+    total_rounds = 15
     
     os.makedirs(f'/app/checkpoints/{NOISE_MULTIPLIER}', exist_ok=True)
     
@@ -95,7 +95,7 @@ def main():
                         model.load_state_dict(global_state)
                         
                         print(f"Client {CLIENT_ID}: Round {current_round} - Training...")
-                        train(model, trainloader, epochs=4)
+                        train(model, trainloader, epochs=2)
                         
                         # Save checkpoint
                         ckpt_path = f"/app/checkpoints/{NOISE_MULTIPLIER}/client_{CLIENT_ID}_round_{current_round}.pt"

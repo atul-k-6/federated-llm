@@ -79,7 +79,7 @@ Located in `client/client.py`:
 - **Momentum:** `0.9`
 - **Loss Function:** `CrossEntropyLoss`
 - **Batch Size:** `32`
-- **Local Epochs per Round:** `4`
+- **Local Epochs per Round:** `2`
 - **Data Augmentation:** `RandomCrop(32, padding=4)` and `RandomHorizontalFlip()` applied to training data.
 - **Data Partitioning:** Dataset is equally divided into 3 completely disjoint shards using the `prepare_dataset.py` script.
 
@@ -91,11 +91,19 @@ Located in `client/client.py`:
 
 ### 4. Federated Learning Hyperparameters (Server-Side)
 Located in `server/main.py`:
-- **Total Communication Rounds (`ROUNDS`):** `10`
+- **Total Communication Rounds (`ROUNDS`):** `15`
 - **Expected Clients (`EXPECTED_CLIENTS`):** `3`
 - **Aggregation Strategy:** FedAvg-style delta aggregation (Global Model = Global Model + Average(Deltas from all clients))
 
-### 5. Evaluator Hyperparameters
+### 5. Evaluator & Metrics Storage
 Located in `evaluator/evaluate.py`:
 - **Test Batch Size:** `64`
-- **Evaluation Metric:** Accuracy (%) on the CIFAR-10 test dataset
+- **Evaluation Metrics (Saved per round):**
+    - **Accuracy:** Overall performance on the CIFAR-10 test set.
+    - **Test Loss:** Cross-entropy loss (indicates prediction confidence).
+    - **Precision, Recall, F1-Score:** Macro-averaged metrics to detect class imbalances.
+    - **Per-Class Accuracy:** Individual accuracy for each of the 10 CIFAR-10 classes.
+- **Directory Structure:**
+    - Metrics and checkpoints are organized into subdirectories based on the `NOISE_MULTIPLIER` to allow for easy comparison:
+        - `metrics/{NOISE_MULTIPLIER}/round_{n}.json`
+        - `checkpoints/{NOISE_MULTIPLIER}/client_{id}_round_{n}.pt`

@@ -7,6 +7,7 @@ __pycache__/
 /data/
 /data_raw/
 /checkpoints/
+/metrics/
 
 # Generated models and plots
 accuracy_plot_*.png

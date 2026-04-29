@@ -7,7 +7,7 @@ import asyncio
 
 app = FastAPI()
 
-ROUNDS = 10
+ROUNDS = 15
 EXPECTED_CLIENTS = 3
 NOISE_MULTIPLIER = os.environ.get("NOISE_MULTIPLIER", "0.01")
 

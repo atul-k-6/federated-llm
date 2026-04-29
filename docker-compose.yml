@@ -73,5 +73,6 @@ services:
     volumes:
       - .:/app
       - ./data/evaluator:/dataset
+      - ./metrics:/app/metrics
     depends_on:
       - aggregator
